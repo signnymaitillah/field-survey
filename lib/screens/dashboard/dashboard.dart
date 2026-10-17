@@ -19,11 +19,13 @@ class DashboardPage extends StatefulWidget {
 class _DashboardPageState extends State<DashboardPage> {
   int _totalSurvey = 0;
   int _totalKategori = 0;
+  List<Map<String, dynamic>> _latestSurveys = [];
   bool _isLoading = true;
 
-  // Endpoint API yang sama dengan SurveyPage
   final String apiUrl = 'https://sijala.biz.id/api/v1/surveys';
   static const Color primaryColor = Color(0xFF1E4CAF);
+  static const Color primaryDark = Color(0xFF153B8A);
+  static const Color backgroundColor = Color(0xFFF1F5F9);
 
   @override
   void initState() {
@@ -31,7 +33,6 @@ class _DashboardPageState extends State<DashboardPage> {
     _fetchDashboardData();
   }
 
-  // Mengambil data survey dari API untuk menghitung total & kategori
   Future<void> _fetchDashboardData() async {
     setState(() {
       _isLoading = true;
@@ -76,14 +77,13 @@ class _DashboardPageState extends State<DashboardPage> {
 
         if (data['status'] == true && data['data'] is List) {
           final List rawList = data['data'];
-          
+
           List<Map<String, dynamic>> surveys = rawList
               .whereType<Map>()
               .map((item) => Map<String, dynamic>.from(item))
               .toList();
 
-          // Menghitung jumlah kategori unik dari data survey yang diinput
-          // Mengecek field kategori (bisa berupa 'category_name' atau 'category')
+          // Menghitung kategori unik
           final Set<String> uniqueCategories = {};
           for (var survey in surveys) {
             String cat = 'Tanpa Kategori';
@@ -102,6 +102,8 @@ class _DashboardPageState extends State<DashboardPage> {
           setState(() {
             _totalSurvey = surveys.length;
             _totalKategori = uniqueCategories.length;
+            // Ambil maksimal 5 survey terbaru untuk ditampilkan
+            _latestSurveys = surveys.take(5).toList();
             _isLoading = false;
           });
           return;
@@ -119,23 +121,47 @@ class _DashboardPageState extends State<DashboardPage> {
     }
   }
 
+  String _getCategoryName(Map<String, dynamic> survey) {
+    if (survey['category_name'] != null &&
+        survey['category_name'].toString().isNotEmpty) {
+      return survey['category_name'].toString();
+    }
+    if (survey['category'] is Map && survey['category']['name'] != null) {
+      return survey['category']['name'].toString();
+    }
+    return 'Umum';
+  }
+
   @override
   Widget build(BuildContext context) {
-    // Mengambil nama user dari parameter (atau fallback ke default)
     final String userName = widget.user['name'] ?? widget.user['nama'] ?? 'Surveyor';
 
     return Scaffold(
-      backgroundColor: const Color(0xFFF8FAFC),
+      backgroundColor: backgroundColor,
 
       // ================= APP BAR =================
       appBar: AppBar(
         backgroundColor: primaryColor,
         foregroundColor: Colors.white,
+        automaticallyImplyLeading: false, // Menghilangkan tombol back
         elevation: 0,
-        title: const Text(
-          "Field Survey Dashboard",
-          style: TextStyle(fontWeight: FontWeight.bold),
+        title: const Row(
+          children: [
+            Icon(Icons.analytics_rounded, size: 24),
+            SizedBox(width: 10),
+            Text(
+              "Field Survey",
+              style: TextStyle(fontWeight: FontWeight.bold, fontSize: 20),
+            ),
+          ],
         ),
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.refresh_rounded),
+            onPressed: _fetchDashboardData,
+            tooltip: "Perbarui Data",
+          ),
+        ],
       ),
 
       // ================= BODY =================
@@ -148,64 +174,106 @@ class _DashboardPageState extends State<DashboardPage> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // Profile Card
+              // HEADER BANNER PROFIL
               Container(
                 width: double.infinity,
-                padding: const EdgeInsets.all(20),
+                padding: const EdgeInsets.all(22),
                 decoration: BoxDecoration(
-                  color: primaryColor,
-                  borderRadius: BorderRadius.circular(16),
+                  gradient: const LinearGradient(
+                    colors: [primaryColor, primaryDark],
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                  ),
+                  borderRadius: BorderRadius.circular(20),
+                  boxShadow: [
+                    BoxShadow(
+                      color: primaryColor.withOpacity(0.3),
+                      blurRadius: 15,
+                      offset: const Offset(0, 8),
+                    ),
+                  ],
                 ),
-                child: Row(
+                child: Stack(
                   children: [
-                    const CircleAvatar(
-                      radius: 30,
-                      backgroundColor: Colors.white,
-                      child: Icon(
-                        Icons.person,
-                        size: 35,
-                        color: primaryColor,
+                    Positioned(
+                      right: -20,
+                      top: -20,
+                      child: Container(
+                        width: 100,
+                        height: 100,
+                        decoration: BoxDecoration(
+                          shape: BoxShape.circle,
+                          color: Colors.white.withOpacity(0.1),
+                        ),
                       ),
                     ),
-                    const SizedBox(width: 16),
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          const Text(
-                            "Halo, Surveyor!",
-                            style: TextStyle(color: Colors.white70, fontSize: 14),
+                    Row(
+                      children: [
+                        Container(
+                          padding: const EdgeInsets.all(3),
+                          decoration: const BoxDecoration(
+                            color: Colors.white,
+                            shape: BoxShape.circle,
                           ),
-                          const SizedBox(height: 5),
-                          Text(
-                            userName,
-                            style: const TextStyle(
-                              color: Colors.white,
-                              fontSize: 22,
-                              fontWeight: FontWeight.bold,
+                          child: const CircleAvatar(
+                            radius: 28,
+                            backgroundColor: Color(0xFFEFF6FF),
+                            child: Icon(
+                              Icons.person_rounded,
+                              size: 32,
+                              color: primaryColor,
                             ),
-                            overflow: TextOverflow.ellipsis,
                           ),
-                        ],
-                      ),
+                        ),
+                        const SizedBox(width: 16),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              const Text(
+                                "Selamat Datang,",
+                                style: TextStyle(
+                                  color: Colors.white70,
+                                  fontSize: 13,
+                                  fontWeight: FontWeight.w500,
+                                ),
+                              ),
+                              const SizedBox(height: 4),
+                              Text(
+                                userName,
+                                style: const TextStyle(
+                                  color: Colors.white,
+                                  fontSize: 20,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                            ],
+                          ),
+                        ),
+                      ],
                     ),
                   ],
                 ),
               ),
 
-              const SizedBox(height: 25),
+              const SizedBox(height: 24),
 
+              // RINGKASAN DATA SECTION
               const Text(
-                "Ringkasan Survey",
-                style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Color(0xFF0F172A)),
+                "Ringkasan Data",
+                style: TextStyle(
+                  fontSize: 18,
+                  fontWeight: FontWeight.bold,
+                  color: Color(0xFF0F172A),
+                ),
               ),
 
-              const SizedBox(height: 15),
+              const SizedBox(height: 14),
 
-              // Kartu Ringkasan Data (Total Survey & Total Kategori sesuai inputan API)
               _isLoading
                   ? const Padding(
-                      padding: EdgeInsets.symmetric(vertical: 30),
+                      padding: EdgeInsets.symmetric(vertical: 20),
                       child: Center(
                         child: CircularProgressIndicator(color: primaryColor),
                       ),
@@ -213,160 +281,268 @@ class _DashboardPageState extends State<DashboardPage> {
                   : Row(
                       children: [
                         Expanded(
-                          child: _buildStatisticCard(
-                            icon: Icons.assignment,
+                          child: _buildStatCard(
                             title: "Total Survey",
                             value: _totalSurvey.toString(),
+                            icon: Icons.assignment_rounded,
+                            badgeColor: const Color(0xFFEFF6FF),
+                            iconColor: primaryColor,
                           ),
                         ),
-                        const SizedBox(width: 15),
+                        const SizedBox(width: 14),
                         Expanded(
-                          child: _buildStatisticCard(
-                            icon: Icons.category,
+                          child: _buildStatCard(
                             title: "Kategori",
                             value: _totalKategori.toString(),
+                            icon: Icons.category_rounded,
+                            badgeColor: const Color(0xFFFEF3C7),
+                            iconColor: const Color(0xFFD97706),
                           ),
                         ),
                       ],
                     ),
 
-              const SizedBox(height: 30),
+              const SizedBox(height: 28),
 
-              const Text(
-                "Menu Utama",
-                style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Color(0xFF0F172A)),
-              ),
-
-              const SizedBox(height: 15),
-
-              // Grid Menu Utama
-              GridView.count(
-                shrinkWrap: true,
-                physics: const NeverScrollableScrollPhysics(),
-                crossAxisCount: 2,
-                crossAxisSpacing: 15,
-                mainAxisSpacing: 15,
+              // SECTION: SURVEY TERBARU (Menggantikan Menu Utama)
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  _buildMenuCard(
-                    icon: Icons.add_circle_outline,
-                    title: "Buat Survey",
-                    onTap: () {
-                      context.go(AppRoutes.SurveyForm);
-                    },
+                  const Text(
+                    "Survey Terbaru",
+                    style: TextStyle(
+                      fontSize: 18,
+                      fontWeight: FontWeight.bold,
+                      color: Color(0xFF0F172A),
+                    ),
                   ),
-                  _buildMenuCard(
-                    icon: Icons.list_alt,
-                    title: "Data Survey",
-                    onTap: () {
+                  TextButton(
+                    onPressed: () {
                       context.go(AppRoutes.surveyDaftar);
                     },
-                  ),
-                  _buildMenuCard(
-                    icon: Icons.map,
-                    title: "Peta Lokasi",
-                    onTap: () {},
-                  ),
-                  _buildMenuCard(
-                    icon: Icons.bar_chart,
-                    title: "Laporan",
-                    onTap: () {},
+                    child: const Text(
+                      "Lihat Semua",
+                      style: TextStyle(
+                        color: primaryColor,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
                   ),
                 ],
               ),
+
+              const SizedBox(height: 8),
+
+              _isLoading
+                  ? const SizedBox.shrink()
+                  : _latestSurveys.isEmpty
+                      ? Container(
+                          width: double.infinity,
+                          padding: const EdgeInsets.all(24),
+                          decoration: BoxDecoration(
+                            color: Colors.white,
+                            borderRadius: BorderRadius.circular(16),
+                            border: Border.all(color: const Color(0xFFE2E8F0)),
+                          ),
+                          child: const Column(
+                            children: [
+                              Icon(Icons.inbox_rounded, size: 40, color: Color(0xFF94A3B8)),
+                              SizedBox(height: 8),
+                              Text(
+                                "Belum ada survey",
+                                style: TextStyle(color: Color(0xFF64748B), fontWeight: FontWeight.w500),
+                              ),
+                            ],
+                          ),
+                        )
+                      : ListView.builder(
+                          shrinkWrap: true,
+                          physics: const NeverScrollableScrollPhysics(),
+                          itemCount: _latestSurveys.length,
+                          itemBuilder: (context, index) {
+                            final survey = _latestSurveys[index];
+                            final title = survey['title']?.toString() ?? 'Tanpa Judul';
+                            final category = _getCategoryName(survey);
+                            final description = survey['description']?.toString() ?? '-';
+
+                            return Container(
+                              margin: const EdgeInsets.only(bottom: 12),
+                              decoration: BoxDecoration(
+                                color: Colors.white,
+                                borderRadius: BorderRadius.circular(14),
+                                border: Border.all(color: const Color(0xFFE2E8F0)),
+                                boxShadow: [
+                                  BoxShadow(
+                                    color: Colors.black.withOpacity(0.02),
+                                    blurRadius: 8,
+                                    offset: const Offset(0, 2),
+                                  ),
+                                ],
+                              ),
+                              child: ListTile(
+                                contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                                leading: Container(
+                                  padding: const EdgeInsets.all(10),
+                                  decoration: BoxDecoration(
+                                    color: const Color(0xFFEFF6FF),
+                                    borderRadius: BorderRadius.circular(10),
+                                  ),
+                                  child: const Icon(Icons.assignment_outlined, color: primaryColor),
+                                ),
+                                title: Text(
+                                  title,
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                  style: const TextStyle(
+                                    fontWeight: FontWeight.bold,
+                                    fontSize: 15,
+                                    color: Color(0xFF0F172A),
+                                  ),
+                                ),
+                                subtitle: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    const SizedBox(height: 4),
+                                    Text(
+                                      description,
+                                      maxLines: 1,
+                                      overflow: TextOverflow.ellipsis,
+                                      style: const TextStyle(fontSize: 12, color: Color(0xFF64748B)),
+                                    ),
+                                    const SizedBox(height: 6),
+                                    Container(
+                                      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                                      decoration: BoxDecoration(
+                                        color: const Color(0xFFF1F5F9),
+                                        borderRadius: BorderRadius.circular(4),
+                                      ),
+                                      child: Text(
+                                        category,
+                                        style: const TextStyle(
+                                          fontSize: 10,
+                                          fontWeight: FontWeight.w600,
+                                          color: primaryColor,
+                                        ),
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                                onTap: () {
+                                  context.go(AppRoutes.surveyDaftar);
+                                },
+                              ),
+                            );
+                          },
+                        ),
             ],
           ),
         ),
       ),
 
       // ================= BOTTOM NAVIGATION BAR =================
-      bottomNavigationBar: BottomNavigationBar(
-        currentIndex: 0,
-        type: BottomNavigationBarType.fixed,
-        selectedItemColor: primaryColor,
-        unselectedItemColor: Colors.grey,
-        onTap: (index) {
-          switch (index) {
-            case 0:
-              context.go(AppRoutes.dashboard);
-              break;
-            case 1:
-              context.go(AppRoutes.surveyDaftar);
-              break;
-            case 2:
-              context.go(AppRoutes.profile);
-              break;
-          }
-        },
-        items: const [
-          BottomNavigationBarItem(
-            icon: Icon(Icons.home_outlined),
-            activeIcon: Icon(Icons.home),
-            label: "Home",
-          ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.assignment_outlined),
-            activeIcon: Icon(Icons.assignment),
-            label: "Survey",
-          ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.person_outline),
-            activeIcon: Icon(Icons.person),
-            label: "Profile",
-          ),
-        ],
+      bottomNavigationBar: Container(
+        decoration: BoxDecoration(
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withOpacity(0.06),
+              blurRadius: 10,
+              offset: const Offset(0, -4),
+            ),
+          ],
+        ),
+        child: BottomNavigationBar(
+          currentIndex: 0,
+          type: BottomNavigationBarType.fixed,
+          backgroundColor: Colors.white,
+          selectedItemColor: primaryColor,
+          unselectedItemColor: const Color(0xFF94A3B8),
+          selectedLabelStyle: const TextStyle(fontWeight: FontWeight.bold, fontSize: 12),
+          onTap: (index) {
+            switch (index) {
+              case 0:
+                context.go(AppRoutes.dashboard);
+                break;
+              case 1:
+                context.go(AppRoutes.surveyDaftar);
+                break;
+              case 2:
+                context.go(AppRoutes.profile);
+                break;
+            }
+          },
+          items: const [
+            BottomNavigationBarItem(
+              icon: Icon(Icons.home_outlined),
+              activeIcon: Icon(Icons.home_rounded),
+              label: "Home",
+            ),
+            BottomNavigationBarItem(
+              icon: Icon(Icons.assignment_outlined),
+              activeIcon: Icon(Icons.assignment_rounded),
+              label: "Survey",
+            ),
+            BottomNavigationBarItem(
+              icon: Icon(Icons.person_outline),
+              activeIcon: Icon(Icons.person_rounded),
+              label: "Profile",
+            ),
+          ],
+        ),
       ),
     );
   }
 
-  Widget _buildStatisticCard({
-    required IconData icon,
+  Widget _buildStatCard({
     required String title,
     required String value,
+    required IconData icon,
+    required Color badgeColor,
+    required Color iconColor,
   }) {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(14),
+        borderRadius: BorderRadius.circular(16),
         border: Border.all(color: const Color(0xFFE2E8F0)),
-      ),
-      child: Column(
-        children: [
-          Icon(icon, size: 32, color: primaryColor),
-          const SizedBox(height: 10),
-          Text(
-            value,
-            style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold, color: Color(0xFF0F172A)),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.03),
+            blurRadius: 10,
+            offset: const Offset(0, 4),
           ),
-          const SizedBox(height: 4),
-          Text(title, style: const TextStyle(color: Color(0xFF64748B), fontSize: 13)),
         ],
       ),
-    );
-  }
-
-  Widget _buildMenuCard({
-    required IconData icon,
-    required String title,
-    required VoidCallback onTap,
-  }) {
-    return InkWell(
-      onTap: onTap,
-      borderRadius: BorderRadius.circular(14),
-      child: Container(
-        decoration: BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.circular(14),
-          border: Border.all(color: const BorderSide(color: Color(0xFFE2E8F0)).color),
-        ),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(icon, size: 40, color: primaryColor),
-            const SizedBox(height: 12),
-            Text(title, style: const TextStyle(fontWeight: FontWeight.bold, color: Color(0xFF0F172A))),
-          ],
-        ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Container(
+            padding: const EdgeInsets.all(10),
+            decoration: BoxDecoration(
+              color: badgeColor,
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: Icon(icon, size: 22, color: iconColor),
+          ),
+          const SizedBox(height: 14),
+          Text(
+            value,
+            style: const TextStyle(
+              fontSize: 24,
+              fontWeight: FontWeight.bold,
+              color: Color(0xFF0F172A),
+            ),
+          ),
+          const SizedBox(height: 2),
+          Text(
+            title,
+            style: const TextStyle(
+              color: Color(0xFF64748B),
+              fontSize: 13,
+              fontWeight: FontWeight.w500,
+            ),
+          ),
+        ],
       ),
     );
   }
