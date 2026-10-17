@@ -1,0 +1,7 @@
+$kind: http-request
+name: logout
+url: https://sijala.biz.id/api/v1/logout
+method: POST
+auth:
+  type: bearer
+order: 3810904666642069

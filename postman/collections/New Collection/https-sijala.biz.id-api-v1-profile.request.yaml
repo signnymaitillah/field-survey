@@ -1,0 +1,10 @@
+$kind: http-request
+name: https://sijala.biz.id/api/v1/profile
+description: ""
+url: https://sijala.biz.id/api/v1/profile
+method: GET
+auth:
+  type: bearer
+  credentials:
+    token: l0EpQvRQnVJW9guDAI4PTkDYVEiFN6Q09GjwQnNhp82odkw0qXlT9Y8j0auL
+order: 3001083219322382

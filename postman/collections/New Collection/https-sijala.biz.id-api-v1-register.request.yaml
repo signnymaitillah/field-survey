@@ -1,0 +1,26 @@
+$kind: http-request
+name: https://sijala.biz.id/api/v1/register
+description: ""
+url: https://sijala.biz.id/api/v1/register?name=Signy Maitillah Agustina&gender=P&email=signnymaitillah@gmail.com&phone=081234567811
+method: POST
+queryParams:
+  - key: name
+    value: Signy Maitillah Agustina
+    disabled: false
+    description: ""
+  - key: gender
+    value: P
+    disabled: false
+    description: ""
+  - key: email
+    value: signnymaitillah@gmail.com
+    disabled: false
+    description: ""
+  - key: phone
+    value: "081234567811"
+    disabled: false
+    description: ""
+body:
+  type: json
+  content: ""
+order: 1786408893541

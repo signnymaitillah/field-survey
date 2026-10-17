@@ -1,0 +1,18 @@
+$kind: http-request
+name: https://sijala.biz.id/api/v1/login
+description: ""
+url: https://sijala.biz.id/api/v1/login?email=signnymaitillah@gmail.com&password=123456
+method: POST
+queryParams:
+  - key: email
+    value: signnymaitillah@gmail.com
+    disabled: false
+    description: ""
+  - key: password
+    value: "123456"
+    disabled: false
+    description: ""
+body:
+  type: json
+  content: ""
+order: 4436854423142901
